@@ -34,10 +34,23 @@ public class StorageController {
 
   @PutMapping("/{bucketId}")
   public void write(@PathVariable String bucketId, @RequestBody String source) {
-    ts.append(bucketId, ExecutionLog.builder()
-        .timestamp(System.currentTimeMillis())
-        .source(source)
-        .build());
+    int pre = 0;
+    int len = source.length();
+    for (int i = 0; i < len; i++) {
+      if (source.charAt(i) == '\n') {
+        ts.append(bucketId, ExecutionLog.builder()
+            .timestamp(System.currentTimeMillis())
+            .source(source.substring(pre, i + 1))
+            .build());
+        pre = i + 1;
+      }
+    }
+    if (pre < len) {
+      ts.append(bucketId, ExecutionLog.builder()
+          .timestamp(System.currentTimeMillis())
+          .source(source.substring(pre, len))
+          .build());
+    }
   }
 
   @GetMapping("/{bucketId}")
