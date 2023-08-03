@@ -1,0 +1,17 @@
+---
+applications:
+  - name: tiny-storage
+    memory: 1024M
+    disk_quota: 4G
+    instances: 1
+    buildpacks:
+      - https://github.com/cloudfoundry/java-buildpack.git # sap_java_buildpack_1_13
+    env:
+      SPRING_PROFILES_ACTIVE: cloud
+      JAVA_OPTS: -Djava.security.egd=file:///dev/./urandom -Xss349k
+      JBP_CONFIG_COMPONENTS: '{jres: ["JavaBuildpack::Jre::SapMachineJRE"]}'
+      JBP_CONFIG_SAP_MACHINE_JRE: '{ jre: { version: 11.+ } }'
+    health-check-type: port
+    path: srv/target/srv.jar
+    services:
+      - selfbilling-loghub
