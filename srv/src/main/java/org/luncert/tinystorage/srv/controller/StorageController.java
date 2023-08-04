@@ -5,6 +5,7 @@ import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.luncert.tinystorage.srv.model.ExecutionLog;
 import org.luncert.tinystorage.storemodule.TimeRange;
 import org.luncert.tinystorage.storemodule.TinyStorage;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+@Slf4j
 @RestController
 @RequestMapping("/storage")
 @RequiredArgsConstructor
@@ -34,6 +36,7 @@ public class StorageController {
 
   @PutMapping("/{bucketId}")
   public void write(@PathVariable String bucketId, @RequestBody String source) {
+//    log.info("-> \n{}", source);
     int pre = 0;
     int len = source.length();
     for (int i = 0; i < len; i++) {
