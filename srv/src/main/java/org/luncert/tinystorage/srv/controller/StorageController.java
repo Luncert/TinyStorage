@@ -1,6 +1,7 @@
 package org.luncert.tinystorage.srv.controller;
 
 import static org.luncert.tinystorage.srv.base.Constants.ANONYMOUS_CHANNEL;
+import static org.luncert.tinystorage.srv.base.Constants.STREAMING_CHANNEL;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class StorageController {
     return new ResponseEntity<>(emitter, HttpStatus.OK);
   }
 
-  @GetMapping(value = "/{bucketId}/stream", produces = TEXT_EVENT_STREAM_VALUE)
+  @GetMapping(value = "/stream/{bucketId}", produces = TEXT_EVENT_STREAM_VALUE)
   public ResponseEntity<SseEmitter> stream(@PathVariable String bucketId) throws IOException {
     SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
@@ -74,7 +75,7 @@ public class StorageController {
     emitter.onCompletion(subscriber::onComplete);
 
     // send empty event to let client receive response header immediately
-    emitter.send(SseEmitter.event().name(ANONYMOUS_CHANNEL).data(""));
+    emitter.send(SseEmitter.event().name(ANONYMOUS_CHANNEL).data(STREAMING_CHANNEL));
 
     return ResponseEntity.ok().body(emitter);
   }
