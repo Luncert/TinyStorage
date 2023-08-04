@@ -1,6 +1,9 @@
 package org.luncert.tinystorage.storemodule;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.luncert.tinystorage.storemodule.descriptor.TsDesc;
+import org.luncert.tinystorage.storemodule.exception.ResourceMissingException;
 import org.luncert.tinystorage.storemodule.util.ReflectUtils;
 import java.io.EOFException;
 import java.io.FileInputStream;
@@ -88,6 +91,11 @@ class TinyStorageImpl implements TinyStorage {
       }
     });
 
+    final String filePath = Paths.get(runtime.getDataStorePath(), fileName).toString();
+    if (!Files.exists(Path.of(filePath))) {
+      throw new ResourceMissingException(fileName);
+    }
+
     AtomicBoolean cancelSignal = new AtomicBoolean();
     consumer.onSubscribe(new Subscription() {
       @Override
@@ -101,7 +109,6 @@ class TinyStorageImpl implements TinyStorage {
     });
 
     runtime.getTaskExecutor().submit(() -> {
-      String filePath = Paths.get(runtime.getDataStorePath(), fileName).toString();
       try (FileInputStream in = new FileInputStream(filePath)) {
         readPhysicalFile(new PhysicalFileOperator(in), consumer, cancelSignal);
         consumer.onComplete();

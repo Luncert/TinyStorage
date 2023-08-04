@@ -12,16 +12,19 @@ import org.luncert.tinystorage.srv.model.ExecutionLog;
 import org.luncert.tinystorage.storemodule.TimeRange;
 import org.luncert.tinystorage.storemodule.TinyStorage;
 import org.luncert.tinystorage.storemodule.descriptor.TsDesc;
+import org.luncert.tinystorage.storemodule.exception.ResourceMissingException;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -108,5 +111,10 @@ public class StorageController {
       }
     });
     return new ResponseEntity<>(emitter, HttpStatus.OK);
+  }
+
+  @ExceptionHandler(ResourceMissingException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public void handleException() {
   }
 }
