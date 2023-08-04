@@ -12,7 +12,9 @@ public interface ReadOperator {
 
   String readString(Charset charset);
 
-  void readFully(byte[] buf);
+  byte[] readByteArray();
+
+  void readBytes(byte[] buf);
 
   byte readByte();
 }

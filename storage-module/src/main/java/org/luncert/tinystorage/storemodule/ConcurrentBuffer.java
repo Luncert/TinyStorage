@@ -205,12 +205,20 @@ public class ConcurrentBuffer {
     public String readString(Charset charset) {
       int size = readInt();
       byte[] payload = new byte[size];
-      readFully(payload);
+      readBytes(payload);
       return new String(payload, charset);
     }
 
+    @Override
+    public byte[] readByteArray() {
+      int size = readInt();
+      byte[] r = new byte[size];
+      readBytes(r);
+      return r;
+    }
+
     @SneakyThrows
-    public void readFully(byte[] buf) {
+    public void readBytes(byte[] buf) {
       requireBytes(buf.length);
       for (int i = 0; i < buf.length; i++) {
         buf[i] = rb();
@@ -274,6 +282,7 @@ public class ConcurrentBuffer {
     }
 
     public void appendBytes(byte[] bytes) {
+      appendInt(bytes.length);
       buffer.put(bytes);
     }
 

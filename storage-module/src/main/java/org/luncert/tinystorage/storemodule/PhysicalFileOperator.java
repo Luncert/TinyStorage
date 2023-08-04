@@ -55,13 +55,21 @@ class PhysicalFileOperator implements ReadOperator {
   public String readString(Charset charset) {
     int size = readInt();
     byte[] payload = new byte[size];
-    readFully(payload);
+    readBytes(payload);
     return new String(payload, charset);
   }
 
   @Override
+  public byte[] readByteArray() {
+    int size = readInt();
+    byte[] r = new byte[size];
+    readBytes(r);
+    return r;
+  }
+
+  @Override
   @SneakyThrows
-  public void readFully(byte[] buf) {
+  public void readBytes(byte[] buf) {
     int n = source.read(buf);
     if (n != buf.length) {
       throw new EOFException(buf.length + " bytes expected, actually read " + n);

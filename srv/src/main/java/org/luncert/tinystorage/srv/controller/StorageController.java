@@ -5,6 +5,7 @@ import static org.luncert.tinystorage.srv.base.Constants.STREAMING_CHANNEL;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
 import java.io.IOException;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -43,16 +44,16 @@ public class StorageController {
   }
 
   @PutMapping("/{bucketId}")
-  public void write(@PathVariable String bucketId, @RequestBody String source) {
+  public void write(@PathVariable String bucketId, @RequestBody byte[] source) {
 //    log.info("-> \n{}", source);
     long now = System.currentTimeMillis();
     int pre = 0;
-    int len = source.length();
+    int len = source.length;
     for (int i = 0; i < len; i++) {
-      if (source.charAt(i) == '\n') {
+      if (source[i] == '\n') {
         ts.append(bucketId, ExecutionLog.builder()
             .timestamp(now)
-            .source(source.substring(pre, i + 1))
+            .source(Arrays.copyOfRange(source, pre, i + 1))
             .build());
         pre = i + 1;
       }
@@ -60,7 +61,7 @@ public class StorageController {
     if (pre < len) {
       ts.append(bucketId, ExecutionLog.builder()
           .timestamp(now)
-          .source(source.substring(pre, len))
+          .source(Arrays.copyOfRange(source, pre, len))
           .build());
     }
   }
