@@ -1,5 +1,7 @@
 package org.luncert.tinystorage.storemodule;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.luncert.tinystorage.storemodule.descriptor.DescribedObject;
 import org.luncert.tinystorage.storemodule.descriptor.SpaceManagerDesc;
 import org.luncert.tinystorage.storemodule.exception.ResourceExhaustedException;
@@ -17,6 +19,7 @@ public class SpaceManager implements DescribedObject<SpaceManagerDesc> {
 
   private final PriorityQueue<TsBucket> priorityQueue = new PriorityQueue<>(
       Comparator.comparingLong(TsBucket::getStartAt));
+  private final Map<String, TsFile> fileMap = new ConcurrentHashMap<>();
 
   SpaceManager(TsRuntime runtime) {
     this.runtime = runtime;
@@ -31,8 +34,13 @@ public class SpaceManager implements DescribedObject<SpaceManagerDesc> {
 
   synchronized TsFile createFile(long timestamp) {
     TsFile tsFile = allocNewFile();
+    fileMap.put(tsFile.getId(), tsFile);
     tsFile.setStartAt(timestamp);
     return tsFile;
+  }
+
+  Optional<TsFile> getFile(String id) {
+    return Optional.ofNullable(fileMap.get(id));
   }
 
   private TsFile allocNewFile() {

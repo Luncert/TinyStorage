@@ -1,6 +1,5 @@
 package org.luncert.tinystorage.storemodule;
 
-import org.luncert.tinystorage.storemodule.common.Utils;
 import org.luncert.tinystorage.storemodule.descriptor.TsDesc;
 import org.luncert.tinystorage.storemodule.util.ReflectUtils;
 import java.io.EOFException;
@@ -83,6 +82,12 @@ class TinyStorageImpl implements TinyStorage {
 
   @Override
   public void readStorePhysicalFile(String fileName, Subscriber<String> consumer) {
+    runtime.getSpaceManager().getFile(fileName).ifPresent(file -> {
+      if (!file.getHeader().isReadOnly()) {
+        file.flush();
+      }
+    });
+
     AtomicBoolean cancelSignal = new AtomicBoolean();
     consumer.onSubscribe(new Subscription() {
       @Override
@@ -108,25 +113,18 @@ class TinyStorageImpl implements TinyStorage {
     });
   }
 
-  private void readPhysicalFile(ReadOperator operator, Subscriber<String> consumer, AtomicBoolean cancelSignal)
+  private void readPhysicalFile(PhysicalFileOperator operator,
+                                Subscriber<String> consumer,
+                                AtomicBoolean cancelSignal)
       throws EOFException, InvocationTargetException, IllegalAccessException {
     // read file header
 
-    boolean readonly = (operator.readByte() & 0x1) == 1;
-    if (!readonly) {
-      consumer.onNext("cannot access non-readonly file");
-      return;
-    }
-
-    long startAt = Utils.byteArrayToLong(i -> operator.readByte(), 8);
-    long endAt = Utils.byteArrayToLong(i -> operator.readByte(), 8);
-    int bufferPosition = Math.max(Utils.byteArrayToInt(i -> operator.readByte(), 4), TsFileHeader.HEADER_SIZE);
-
+    TsFileHeader fileHeader = operator.getFileHeader();
     consumer.onNext("[header]\n"
-        + "isReadonly: " + true + "\n"
-        + "startAt: " + startAt + "\n"
-        + "endAt: " + endAt + "\n"
-        + "bufferPosition: " + bufferPosition + "\n"
+        + "isReadonly: " + fileHeader.isReadOnly() + "\n"
+        + "startAt: " + fileHeader.getStartAt() + "\n"
+        + "endAt: " + fileHeader.getEndAt() + "\n"
+        + "bufferPosition: " + operator.getBufferPos() + "\n"
         + "\n[Records]\n");
 
     // read logs
@@ -146,7 +144,8 @@ class TinyStorageImpl implements TinyStorage {
         builder.append(entry.getKey()).append(":").append(entry.getValue().invoke(record)).append(",");
       }
 
-      consumer.onNext(builder.substring(0, builder.length() - 1) + "}\n");
+      builder.replace(builder.length() - 1, builder.length(), "}\n");
+      consumer.onNext(builder.toString());
 
       if (cancelSignal.get()) {
         break;

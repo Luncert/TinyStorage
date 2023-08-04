@@ -103,6 +103,10 @@ public class ConcurrentBuffer {
     appendFunc = funcAppend;
   }
 
+  void flush() {
+    buffer.force();
+  }
+
   synchronized int append(Record record) {
     return appendFunc.apply(record);
   }

@@ -94,6 +94,11 @@ public class TsFile implements DescribedObject<TsFileDesc> {
     return buffer.requireReadCursor(syncWithWriter);
   }
 
+  void flush() {
+    buffer.saveFileHeader(header);
+    buffer.flush();
+  }
+
   /**
    * Close log file and release resources.
    * @return True if no active reader, else False

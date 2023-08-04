@@ -5,14 +5,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+import lombok.Getter;
 import lombok.SneakyThrows;
+import org.luncert.tinystorage.storemodule.common.Utils;
 
 class PhysicalFileOperator implements ReadOperator {
 
   private final InputStream source;
+  @Getter
+  private final TsFileHeader fileHeader = new TsFileHeader();
+  @Getter
+  private int bufferPos = Integer.MAX_VALUE;
+  private int pos;
   
   PhysicalFileOperator(InputStream source) {
     this.source = source;
+    fileHeader.setReadOnly((readByte() & 0x1) == 1);
+    fileHeader.setStartAt(Utils.byteArrayToLong(i -> readByte(), 8));
+    fileHeader.setEndAt(Utils.byteArrayToLong(i -> readByte(), 8));
+    bufferPos = Utils.byteArrayToInt(i -> readByte(), 4);
   }
   
   @Override
@@ -55,6 +66,7 @@ class PhysicalFileOperator implements ReadOperator {
     if (n != buf.length) {
       throw new EOFException(buf.length + " bytes expected, actually read " + n);
     }
+    pos += n;
   }
 
   @Override
@@ -64,10 +76,14 @@ class PhysicalFileOperator implements ReadOperator {
   }
 
   private byte rb() throws IOException {
+    if (pos >= bufferPos) {
+      throw new EOFException();
+    }
     int n = source.read();
     if (n == -1) {
       throw new EOFException();
     }
+    pos++;
     return (byte) (n & 0xff);
   }
 }
