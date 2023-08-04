@@ -1,0 +1,5 @@
+cors.origin.urls:
+  - https://dw-meta.cfapps.eu10.hana.ondemand.com
+  - https://meta.cfapps.eu10.hana.ondemand.com
+  - http://localhost:8080
+  - http://localhost:1212
