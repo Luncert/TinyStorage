@@ -59,14 +59,23 @@ class SseSubscriber extends RecordSubscriber {
 
   @Override
   public void onError(Throwable t) {
+    cleanEventBuilder();
     emitter.completeWithError(t);
-    timer.cancel();
   }
 
   @Override
   public void onComplete() {
+    cleanEventBuilder();
     emitter.complete();
+  }
+
+  @SneakyThrows
+  private void cleanEventBuilder() {
     timer.cancel();
+    if (eventBuilderSize > 0) {
+      emitter.send(eventBuilder);
+      resetEventBuilder();
+    }
   }
   
   @Override

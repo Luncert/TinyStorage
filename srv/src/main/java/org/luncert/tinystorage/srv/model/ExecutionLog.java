@@ -15,7 +15,7 @@ import org.luncert.tinystorage.storemodule.TsWriter;
 public class ExecutionLog implements Record {
 
   private long timestamp;
-  protected String source;
+  private String source;
 
   public static final TsReader<ExecutionLog> READER = buffer ->
       // timestamp + type + payloadLength + payload
