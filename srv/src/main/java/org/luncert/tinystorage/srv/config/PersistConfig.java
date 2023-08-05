@@ -15,8 +15,8 @@ public class PersistConfig {
   public TinyStorage tinyStorage(ThreadPoolTaskExecutor taskExecutor) {
     return TinyStorageFactory.createTinyStorage(
         TsConfig.DEFAULT.config()
-            .maxStoreSize("3GB")
-            .maxFileSize("16MB")
+            .maxStoreSize("100MB")
+            .maxFileSize("1MB")
             .reader(LineRecord.READER)
             .writer(LineRecord.WRITER)
             .taskExecutor(taskExecutor::submit)

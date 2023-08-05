@@ -111,7 +111,7 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
    * Try to close oldest file.
    * @return True if success
    */
-  Optional<TsFile> recycleFile() {
+  Optional<TsFile> recycleFile(boolean force) {
     synchronized (this) {
       if (tsFiles.isEmpty()) {
         return Optional.empty();
@@ -119,7 +119,7 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
 
       TsFile file = tsFiles.getFirst();
       long fileSize = file.size();
-      if (file.getHeader().isReadOnly() && file.reset()) {
+      if ((force || file.getHeader().isReadOnly()) && file.reset()) {
         /*
         TODO cannot delete mapped file in windows os
         see https://bugs.java.com/view_bug.do?bug_id=4715154

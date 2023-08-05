@@ -47,7 +47,7 @@ public class SpaceManager implements DescribedObject<SpaceManagerDesc> {
     if (runtime.getMaxFileSize() > runtime.getMaxStoreSize() - used) {
       // recycle file
       for (TsBucket bucket : priorityQueue) {
-        Optional<TsFile> optional = bucket.recycleFile();
+        Optional<TsFile> optional = bucket.recycleFile(true);
         if (optional.isPresent()) {
           // update bucket priority
           priorityQueue.remove(bucket);
