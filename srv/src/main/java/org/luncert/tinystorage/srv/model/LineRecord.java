@@ -12,19 +12,19 @@ import org.luncert.tinystorage.storemodule.TsWriter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExecutionLog implements Record {
+public class LineRecord implements Record {
 
   private long timestamp;
   private byte[] source;
 
-  public static final TsReader<ExecutionLog> READER = buffer ->
+  public static final TsReader<LineRecord> READER = buffer ->
       // timestamp + type + payloadLength + payload
-      ExecutionLog.builder()
+      LineRecord.builder()
           .timestamp(buffer.readLong())
           .source(buffer.readByteArray())
           .build();
 
-  public static final TsWriter<ExecutionLog> WRITER = (r, buffer) -> {
+  public static final TsWriter<LineRecord> WRITER = (r, buffer) -> {
     buffer.appendLong(r.getTimestamp());
     buffer.appendBytes(r.getSource());
   };

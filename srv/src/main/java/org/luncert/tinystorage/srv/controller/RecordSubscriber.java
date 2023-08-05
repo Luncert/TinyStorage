@@ -1,12 +1,12 @@
 package org.luncert.tinystorage.srv.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.luncert.tinystorage.srv.model.ExecutionLog;
+import org.luncert.tinystorage.srv.model.LineRecord;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 @Slf4j
-public abstract class RecordSubscriber implements Subscriber<ExecutionLog> {
+public abstract class RecordSubscriber implements Subscriber<LineRecord> {
 
   private Subscription subscription;
   

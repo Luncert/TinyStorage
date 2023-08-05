@@ -1,6 +1,6 @@
 package org.luncert.tinystorage.srv.config;
 
-import org.luncert.tinystorage.srv.model.ExecutionLog;
+import org.luncert.tinystorage.srv.model.LineRecord;
 import org.luncert.tinystorage.storemodule.TinyStorage;
 import org.luncert.tinystorage.storemodule.TinyStorageFactory;
 import org.luncert.tinystorage.storemodule.TsConfig;
@@ -17,8 +17,8 @@ public class PersistConfig {
         TsConfig.DEFAULT.config()
             .maxStoreSize("3GB")
             .maxFileSize("16MB")
-            .reader(ExecutionLog.READER)
-            .writer(ExecutionLog.WRITER)
+            .reader(LineRecord.READER)
+            .writer(LineRecord.WRITER)
             .taskExecutor(taskExecutor::submit)
             .build());
   }

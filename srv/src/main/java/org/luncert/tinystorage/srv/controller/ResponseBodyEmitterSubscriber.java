@@ -2,7 +2,7 @@ package org.luncert.tinystorage.srv.controller;
 
 import java.io.IOException;
 import lombok.SneakyThrows;
-import org.luncert.tinystorage.srv.model.ExecutionLog;
+import org.luncert.tinystorage.srv.model.LineRecord;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
@@ -16,7 +16,7 @@ public class ResponseBodyEmitterSubscriber extends RecordSubscriber {
 
   @SneakyThrows
   @Override
-  public void onNext(ExecutionLog record) {
+  public void onNext(LineRecord record) {
     emitter.send(record.getSource(), MediaType.TEXT_PLAIN);
   }
 

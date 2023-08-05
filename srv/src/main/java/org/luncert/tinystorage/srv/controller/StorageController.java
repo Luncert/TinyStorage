@@ -9,7 +9,7 @@ import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.luncert.tinystorage.srv.model.ExecutionLog;
+import org.luncert.tinystorage.srv.model.LineRecord;
 import org.luncert.tinystorage.storemodule.TimeRange;
 import org.luncert.tinystorage.storemodule.TinyStorage;
 import org.luncert.tinystorage.storemodule.descriptor.TsDesc;
@@ -45,13 +45,12 @@ public class StorageController {
 
   @PutMapping("/{bucketId}")
   public void write(@PathVariable String bucketId, @RequestBody byte[] source) {
-//    log.info("-> \n{}", source);
     long now = System.currentTimeMillis();
     int pre = 0;
     int len = source.length;
     for (int i = 0; i < len; i++) {
       if (source[i] == '\n') {
-        ts.append(bucketId, ExecutionLog.builder()
+        ts.append(bucketId, LineRecord.builder()
             .timestamp(now)
             .source(Arrays.copyOfRange(source, pre, i + 1))
             .build());
@@ -59,7 +58,7 @@ public class StorageController {
       }
     }
     if (pre < len) {
-      ts.append(bucketId, ExecutionLog.builder()
+      ts.append(bucketId, LineRecord.builder()
           .timestamp(now)
           .source(Arrays.copyOfRange(source, pre, len))
           .build());

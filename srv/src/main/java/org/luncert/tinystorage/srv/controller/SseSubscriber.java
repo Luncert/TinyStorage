@@ -8,7 +8,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.luncert.tinystorage.srv.model.ExecutionLog;
+import org.luncert.tinystorage.srv.model.LineRecord;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
@@ -49,7 +49,7 @@ class SseSubscriber extends RecordSubscriber {
 
   @Override
   @SneakyThrows
-  public void onNext(ExecutionLog r) {
+  public void onNext(LineRecord r) {
     synchronized (this) {
       // buffering to avoid taking up too much network resources
       eventBuilderSize++;
