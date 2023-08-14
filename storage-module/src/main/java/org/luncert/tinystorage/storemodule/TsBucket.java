@@ -121,8 +121,9 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
       long fileSize = file.size();
       if ((force || file.getHeader().isReadOnly()) && file.reset()) {
         /*
-        TODO cannot delete mapped file in windows os
+        cannot delete mapped file in windows
         see https://bugs.java.com/view_bug.do?bug_id=4715154
+        solution: https://stackoverflow.com/questions/2972986/how-to-unmap-a-file-from-memory-mapped-using-filechannel-in-java
         */
         // FileUtils.forceDelete(Paths.get(runtime.getDataStorePath(), first.getId()).toFile());
         tsFiles.removeFirst();
