@@ -255,21 +255,21 @@ public class ConcurrentBuffer {
     // little endian
 
     public void appendLong(long value) {
-      buffer.put((byte)((int)(value & 255L)));
-      buffer.put((byte)((int)(value >> 8 & 255L)));
-      buffer.put((byte)((int)(value >> 16 & 255L)));
-      buffer.put((byte)((int)(value >> 24 & 255L)));
-      buffer.put((byte)((int)(value >> 32 & 255L)));
-      buffer.put((byte)((int)(value >> 40 & 255L)));
-      buffer.put((byte)((int)(value >> 48 & 255L)));
-      buffer.put((byte)((int)(value >> 56 & 255L)));
+      buffer.put((byte)(value & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) (value >> 8 & 255));
     }
 
     public void appendInt(int value) {
       buffer.put((byte)(value & 255));
+      buffer.put((byte)((value = value >> 8) & 255));
+      buffer.put((byte)((value = value >> 8) & 255));
       buffer.put((byte)(value >> 8 & 255));
-      buffer.put((byte)(value >> 16 & 255));
-      buffer.put((byte)(value >> 24 & 255));
     }
 
     public void appendString(String str) {
@@ -277,7 +277,6 @@ public class ConcurrentBuffer {
     }
 
     public void appendString(String str, Charset charset) {
-      appendInt(str.length());
       appendBytes(str.getBytes(charset));
     }
 

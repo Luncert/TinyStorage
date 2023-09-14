@@ -36,7 +36,7 @@ public class TestTinyStorage {
     }
 
     AtomicInteger count = new AtomicInteger();
-    tinyStorage.subscribe("0", TimeRange.UNSET, new Subscriber<Record>() {
+    tinyStorage.subscribe("0", TimeRange.UNSET, new Subscriber<>() {
       @Override
       public void onSubscribe(Subscription subscription) {
       }
@@ -72,7 +72,7 @@ public class TestTinyStorage {
     TsDesc descriptor = tinyStorage.getDescriptor();
     for (Map.Entry<String, TsBucketDesc> entry : descriptor.getCache().getBuckets().entrySet()) {
       for (TsFileDesc tsFileDesc : entry.getValue().getFiles()) {
-        tinyStorage.readStorePhysicalFile(tsFileDesc.getId(), new Subscriber<String>() {
+        tinyStorage.readStorePhysicalFile(tsFileDesc.getId(), new Subscriber<>() {
           @Override
           public void onSubscribe(Subscription subscription) {
           }
