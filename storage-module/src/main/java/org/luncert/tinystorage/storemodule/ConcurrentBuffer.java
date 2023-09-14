@@ -1,6 +1,5 @@
 package org.luncert.tinystorage.storemodule;
 
-import java.io.IOException;
 import org.luncert.tinystorage.storemodule.common.Utils;
 
 import java.io.Closeable;
