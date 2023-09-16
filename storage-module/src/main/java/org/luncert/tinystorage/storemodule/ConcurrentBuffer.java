@@ -25,8 +25,6 @@ public class ConcurrentBuffer {
 
   private final WriteContext writeContext = new WriteContext();
 
-  private final Signal bufferUpdateSignal = new Signal();
-
   private Function<Record, Integer> appendFunc;
 
   private final Function<Record, Integer> funcAppend;
@@ -38,7 +36,9 @@ public class ConcurrentBuffer {
     this.runtime = runtime;
     this.buffer = buffer;
     funcAppend = r -> {
-      bufferUpdateSignal.set();
+      synchronized (this) {
+        notifyAll();
+      }
 
       TsWriter<Record> writer = (TsWriter<Record>) runtime.getWriter();
 
@@ -237,10 +237,16 @@ public class ConcurrentBuffer {
         if (!syncWithWriter || isWriteLocked()) {
           throw new EOFException();
         }
+
         // wait for buffer update signal
-        if (bufferUpdateSignal.watch(READ_BLOCK_TIMEOUT)) {
-          throw new EOFException();
+        try {
+          if (watch(READ_BLOCK_TIMEOUT)) {
+            throw new EOFException();
+          }
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
         }
+
         readableCount = buffer.position() - readOffset;
       }
     }
@@ -255,21 +261,21 @@ public class ConcurrentBuffer {
     // little endian
 
     public void appendLong(long value) {
-      buffer.put((byte)((int)(value & 255L)));
-      buffer.put((byte)((int)(value >> 8 & 255L)));
-      buffer.put((byte)((int)(value >> 16 & 255L)));
-      buffer.put((byte)((int)(value >> 24 & 255L)));
-      buffer.put((byte)((int)(value >> 32 & 255L)));
-      buffer.put((byte)((int)(value >> 40 & 255L)));
-      buffer.put((byte)((int)(value >> 48 & 255L)));
-      buffer.put((byte)((int)(value >> 56 & 255L)));
+      buffer.put((byte)(value & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) ((value = value >> 8) & 255));
+      buffer.put((byte) (value >> 8 & 255));
     }
 
     public void appendInt(int value) {
       buffer.put((byte)(value & 255));
+      buffer.put((byte)((value = value >> 8) & 255));
+      buffer.put((byte)((value = value >> 8) & 255));
       buffer.put((byte)(value >> 8 & 255));
-      buffer.put((byte)(value >> 16 & 255));
-      buffer.put((byte)(value >> 24 & 255));
     }
 
     public void appendString(String str) {
@@ -277,7 +283,6 @@ public class ConcurrentBuffer {
     }
 
     public void appendString(String str, Charset charset) {
-      appendInt(str.length());
       appendBytes(str.getBytes(charset));
     }
 
@@ -291,33 +296,11 @@ public class ConcurrentBuffer {
     }
   }
 
-  private static class Signal {
-
-    void set() {
-      synchronized (this) {
-        notifyAll();
-      }
+  protected boolean watch(long timeout) throws InterruptedException {
+    long timestamp = System.currentTimeMillis();
+    synchronized (this) {
+      wait(timeout);
     }
-
-    @SneakyThrows
-    void watch() {
-      synchronized (this) {
-        wait();
-      }
-    }
-
-    /**
-     * Watch signal update with timeout.
-     * @param timeout milliseconds
-     * @return True if action ends due to timeout
-     */
-    @SneakyThrows
-    boolean watch(long timeout) {
-      long timestamp = System.currentTimeMillis();
-      synchronized (this) {
-        wait(timeout);
-      }
-      return System.currentTimeMillis() - timestamp >= timeout;
-    }
+    return System.currentTimeMillis() - timestamp >= timeout;
   }
 }
