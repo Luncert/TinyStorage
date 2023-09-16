@@ -1,15 +1,9 @@
 package org.luncert.tinystorage.srv.controller;
 
-import static org.luncert.tinystorage.srv.base.Constants.ANONYMOUS_CHANNEL;
-import static org.luncert.tinystorage.srv.base.Constants.STREAMING_CHANNEL;
-import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
-
-import java.io.IOException;
-import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.luncert.tinystorage.srv.model.LineRecord;
+import org.luncert.tinystorage.srv.service.PersistService;
 import org.luncert.tinystorage.storemodule.TimeRange;
 import org.luncert.tinystorage.storemodule.TinyStorage;
 import org.luncert.tinystorage.storemodule.descriptor.TsDesc;
@@ -19,16 +13,15 @@ import org.reactivestreams.Subscription;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+
+import static org.luncert.tinystorage.srv.base.Constants.ANONYMOUS_CHANNEL;
+import static org.luncert.tinystorage.srv.base.Constants.STREAMING_CHANNEL;
+import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
 @Slf4j
 @RestController
@@ -37,6 +30,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class StorageController {
 
   private final TinyStorage ts;
+  private final PersistService persistService;
 
   @GetMapping("/descriptors")
   public TsDesc getStatus() {
@@ -45,24 +39,7 @@ public class StorageController {
 
   @PutMapping("/{bucketId}")
   public void write(@PathVariable String bucketId, @RequestBody byte[] source) {
-    long now = System.currentTimeMillis();
-    int pre = 0;
-    int len = source.length;
-    for (int i = 0; i < len; i++) {
-      if (source[i] == '\n') {
-        ts.append(bucketId, LineRecord.builder()
-            .timestamp(now)
-            .source(Arrays.copyOfRange(source, pre, i + 1))
-            .build());
-        pre = i + 1;
-      }
-    }
-    if (pre < len) {
-      ts.append(bucketId, LineRecord.builder()
-          .timestamp(now)
-          .source(Arrays.copyOfRange(source, pre, len))
-          .build());
-    }
+    persistService.persist(bucketId, source);
   }
 
   @GetMapping("/{bucketId}")
