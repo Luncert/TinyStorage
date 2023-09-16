@@ -55,7 +55,7 @@ public class ConcurrentBuffer {
         // and won't accept data anymore.
         appendFunc = FUNC_LOCK_WRITE;
         header.readOnly = true;
-        saveFileHeader();
+        header.saveToBuffer();
         return 0;
       }
 
@@ -63,16 +63,36 @@ public class ConcurrentBuffer {
     };
     determineAppendFunc();
 
-    loadFileHeader();
+    header.loadFromBuffer();
   }
 
   @Getter
-  public static class Header {
+  public class Header {
 
     // readOnly + startAt + endAt + writePosition
-    static final int HEADER_SIZE = 1 + 8 + 8 + 4;
+    static final int HEADER_SIZE = 1 + 4;
 
     private boolean readOnly;
+
+    /**
+     * Load file header from buffer.
+     */
+    private void loadFromBuffer() {
+      header.readOnly = (buffer.get(0) & 0x1) == 1;
+      // header.startAt = Utils.byteArrayToLong(i -> buffer.get(1 + i), 8);
+      // header.endAt = Utils.byteArrayToLong(i -> buffer.get(9 + i), 8);
+      buffer.position(Math.max(Utils.byteArrayToInt(i -> buffer.get(17 + i), 4), Header.HEADER_SIZE));
+    }
+
+    /**
+     * Save file header to buffer.
+     */
+    private void saveToBuffer() {
+      buffer.put(0, header.isReadOnly() ? (byte) 1 : (byte) 0);
+      // Utils.longToByteArray(header.getStartAt(), (i, b) -> buffer.put(1 + i, b), 8);
+      // Utils.longToByteArray(header.getEndAt(), (i, b) -> buffer.put(9 + i, b), 8);
+      Utils.intToByteArray(buffer.position(), (i, b) -> buffer.put(17 + i, b), 4);
+    }
   }
 
   private void determineAppendFunc() {
@@ -91,26 +111,6 @@ public class ConcurrentBuffer {
   }
 
   /**
-   * Load file header from buffer.
-   */
-  private void loadFileHeader() {
-    header.readOnly = (buffer.get(0) & 0x1) == 1;
-    // header.startAt = Utils.byteArrayToLong(i -> buffer.get(1 + i), 8);
-    // header.endAt = Utils.byteArrayToLong(i -> buffer.get(9 + i), 8);
-    buffer.position(Math.max(Utils.byteArrayToInt(i -> buffer.get(17 + i), 4), Header.HEADER_SIZE));
-  }
-
-  /**
-   * Save file header to buffer.
-   */
-  private void saveFileHeader() {
-    buffer.put(0, header.isReadOnly() ? (byte) 1 : (byte) 0);
-    // Utils.longToByteArray(header.getStartAt(), (i, b) -> buffer.put(1 + i, b), 8);
-    // Utils.longToByteArray(header.getEndAt(), (i, b) -> buffer.put(9 + i, b), 8);
-    Utils.intToByteArray(buffer.position(), (i, b) -> buffer.put(17 + i, b), 4);
-  }
-
-  /**
    * Return buffer readable bytes count.
    */
   int size() {
@@ -119,18 +119,18 @@ public class ConcurrentBuffer {
 
   void reset() {
     header.readOnly = false;
-    saveFileHeader();
+    header.saveToBuffer();
     buffer.position(Header.HEADER_SIZE);
     appendFunc = funcAppend;
   }
 
   void flush() {
-    saveFileHeader();
+    header.saveToBuffer();
     buffer.force();
   }
 
   void close() {
-    saveFileHeader();
+    header.saveToBuffer();
   }
 
   synchronized int append(Object record) {
