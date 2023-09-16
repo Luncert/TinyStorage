@@ -21,9 +21,6 @@ public class TsFile implements DescribedObject<TsFileDesc> {
   @Getter
   private final String id;
 
-  @Getter
-  private final TsFileHeader header = new TsFileHeader();
-
   private final TsRuntime runtime;
 
   private RandomAccessFile handle;
@@ -46,24 +43,10 @@ public class TsFile implements DescribedObject<TsFileDesc> {
     } catch (IOException e) {
       throw new TinyStorageException("cannot open file", e);
     }
-
-    buffer.loadFileHeader(header);
   }
 
-  boolean acceptTimeRange(TimeRange timeRange) {
-    return timeRange.accept(header.getStartAt()) || timeRange.accept(header.getEndAt());
-  }
-
-  TimeRange getTimeRange() {
-    return new TimeRange(header.getStartAt(), header.getEndAt());
-  }
-
-  void setStartAt(long startAt) {
-    header.setStartAt(startAt);
-  }
-
-  long getStartAt() {
-    return header.getStartAt();
+  boolean isReadOnly() {
+    return buffer.getHeader().isReadOnly();
   }
 
   @SneakyThrows
@@ -72,20 +55,9 @@ public class TsFile implements DescribedObject<TsFileDesc> {
     return buffer.size();
   }
 
-  int append(Record record) throws IOException {
+  int append(Object record) throws IOException {
     checkFileStatus();
-
-    int n = buffer.append(record);
-    if (n > 0) {
-      header.setEndAt(record.getTimestamp());
-    } else {
-      // when file reaches the size limit, it will be marked readonly,
-      // and won't accept data any more.
-      header.setReadOnly(true);
-      buffer.saveFileHeader(header);
-    }
-
-    return n;
+    return buffer.append(record);
   }
 
   ReadContext createReader(boolean syncWithWriter) throws IOException {
@@ -95,7 +67,6 @@ public class TsFile implements DescribedObject<TsFileDesc> {
   }
 
   void flush() {
-    buffer.saveFileHeader(header);
     buffer.flush();
   }
 
@@ -105,9 +76,7 @@ public class TsFile implements DescribedObject<TsFileDesc> {
    */
   boolean close() throws IOException {
     if (!closed && buffer.isAbleToRelease()) {
-      // save header
-      buffer.saveFileHeader(header);
-      // release resources
+      buffer.close();
       handle.close();
       handle = null;
       buffer = null;
@@ -119,16 +88,9 @@ public class TsFile implements DescribedObject<TsFileDesc> {
 
   boolean reset() {
     if (buffer.isAbleToRelease()) {
-      // reset header
-      header.setReadOnly(false);
-      header.setStartAt(0);
-      header.setEndAt(0);
-      buffer.saveFileHeader(header);
       // reset buffer position
       buffer.reset();
-
       closed = false;
-
       return true;
     }
     return false;
@@ -142,11 +104,10 @@ public class TsFile implements DescribedObject<TsFileDesc> {
 
   @Override
   public TsFileDesc getDescriptor() {
+    ConcurrentBuffer.Header header = buffer.getHeader();
     return TsFileDesc.builder()
         .id(id)
         .readOnly(header.isReadOnly())
-        .startAt(header.getStartAt())
-        .endAt(header.getEndAt())
         .build();
   }
 }

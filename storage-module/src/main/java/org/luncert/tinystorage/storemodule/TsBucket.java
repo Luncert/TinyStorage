@@ -23,24 +23,24 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
 
   private final TsRuntime runtime;
 
-  private int bucketSize;
+  private long bucketSize;
 
   @Getter
   private long lastAccessTime;
 
   private final LinkedList<TsFile> tsFiles = new LinkedList<>();
 
-  void append(Record record) {
+  void append(Object record) {
     synchronized (this) {
       lastAccessTime = System.currentTimeMillis();
 
-      TsFile last = getFile(record.getTimestamp());
+      TsFile last = getFile();
 
       try {
         int n;
         while ((n = last.append(record)) <= 0) {
           // create new file, and try again
-          last = createFile(record.getTimestamp());
+          last = createFile();
         }
 
         bucketSize += n;
@@ -50,16 +50,16 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
     }
   }
 
-  private TsFile getFile(long timestamp) {
+  private TsFile getFile() {
     try {
       return tsFiles.getLast();
     } catch (NoSuchElementException e) {
-      return createFile(timestamp);
+      return createFile();
     }
   }
 
-  private TsFile createFile(long timestamp) {
-    TsFile file = runtime.getSpaceManager().createFile(timestamp);
+  private TsFile createFile() {
+    TsFile file = runtime.getSpaceManager().createFile();
     tsFiles.add(file);
     bucketSize += file.size(); // header size
     return file;
@@ -67,13 +67,11 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
 
   /**
    * Create bucket reader with time range as filter.
-   * @param timeRange TimeRange
    * @return BucketReader
    */
-  BucketReader createReader(TimeRange timeRange) {
+  BucketReader createReader() {
     synchronized (this) {
       List<ConcurrentBuffer.ReadContext> readerContexts = tsFiles.stream()
-          .filter(file -> file.acceptTimeRange(timeRange))
           .map(file -> {
             try {
               return file.createReader(false);
@@ -85,17 +83,7 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
     }
   }
 
-  long getStartAt() {
-    synchronized (this) {
-      try {
-        return tsFiles.getFirst().getStartAt();
-      } catch (NoSuchElementException e) {
-        return Long.MAX_VALUE;
-      }
-    }
-  }
-
-  int size() {
+  long size() {
     synchronized (this) {
       return bucketSize;
     }
@@ -119,7 +107,7 @@ class TsBucket implements DescribedObject<TsBucketDesc> {
 
       TsFile file = tsFiles.getFirst();
       long fileSize = file.size();
-      if ((force || file.getHeader().isReadOnly()) && file.reset()) {
+      if ((force || file.isReadOnly()) && file.reset()) {
         /*
         cannot delete mapped file in windows
         see https://bugs.java.com/view_bug.do?bug_id=4715154

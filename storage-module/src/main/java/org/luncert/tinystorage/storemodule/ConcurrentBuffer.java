@@ -1,5 +1,7 @@
 package org.luncert.tinystorage.storemodule;
 
+import lombok.Getter;
+import lombok.NonNull;
 import org.luncert.tinystorage.storemodule.common.Utils;
 
 import java.io.Closeable;
@@ -19,19 +21,21 @@ public class ConcurrentBuffer {
 
   private final TsRuntime runtime;
 
+  @Getter
+  private final Header header = new Header();
+
   private final MappedByteBuffer buffer;
 
   private final AtomicInteger readerCount = new AtomicInteger();
 
   private final WriteContext writeContext = new WriteContext();
 
-  private Function<Record, Integer> appendFunc;
+  private Function<Object, Integer> appendFunc;
 
-  private final Function<Record, Integer> funcAppend;
+  private final Function<Object, Integer> funcAppend;
 
-  private static final Function<Record, Integer> FUNC_LOCK_WRITE = r -> 0;
+  private static final Function<Object, Integer> FUNC_LOCK_WRITE = r -> 0;
 
-  @SuppressWarnings("unchecked")
   ConcurrentBuffer(TsRuntime runtime, MappedByteBuffer buffer) {
     this.runtime = runtime;
     this.buffer = buffer;
@@ -40,20 +44,35 @@ public class ConcurrentBuffer {
         notifyAll();
       }
 
-      TsWriter<Record> writer = (TsWriter<Record>) runtime.getWriter();
+      TsWriter<Object> writer = runtime.getWriter();
 
       int pos = buffer.position();
       try {
         writer.write(r, writeContext);
       } catch (BufferOverflowException e) {
         buffer.position(pos);
+        // when file reaches the size limit, it will be marked readonly,
+        // and won't accept data anymore.
         appendFunc = FUNC_LOCK_WRITE;
+        header.readOnly = true;
+        saveFileHeader();
         return 0;
       }
 
       return buffer.position() - pos;
     };
     determineAppendFunc();
+
+    loadFileHeader();
+  }
+
+  @Getter
+  public static class Header {
+
+    // readOnly + startAt + endAt + writePosition
+    static final int HEADER_SIZE = 1 + 8 + 8 + 4;
+
+    private boolean readOnly;
   }
 
   private void determineAppendFunc() {
@@ -74,20 +93,20 @@ public class ConcurrentBuffer {
   /**
    * Load file header from buffer.
    */
-  void loadFileHeader(TsFileHeader fileHeader) {
-    fileHeader.setReadOnly((buffer.get(0) & 0x1) == 1);
-    fileHeader.setStartAt(Utils.byteArrayToLong(i -> buffer.get(1 + i), 8));
-    fileHeader.setEndAt(Utils.byteArrayToLong(i -> buffer.get(9 + i), 8));
-    buffer.position(Math.max(Utils.byteArrayToInt(i -> buffer.get(17 + i), 4), TsFileHeader.HEADER_SIZE));
+  private void loadFileHeader() {
+    header.readOnly = (buffer.get(0) & 0x1) == 1;
+    // header.startAt = Utils.byteArrayToLong(i -> buffer.get(1 + i), 8);
+    // header.endAt = Utils.byteArrayToLong(i -> buffer.get(9 + i), 8);
+    buffer.position(Math.max(Utils.byteArrayToInt(i -> buffer.get(17 + i), 4), Header.HEADER_SIZE));
   }
 
   /**
    * Save file header to buffer.
    */
-  void saveFileHeader(TsFileHeader fileHeader) {
-    buffer.put(0, fileHeader.isReadOnly() ? (byte) 1 : (byte) 0);
-    Utils.longToByteArray(fileHeader.getStartAt(), (i, b) -> buffer.put(1 + i, b), 8);
-    Utils.longToByteArray(fileHeader.getEndAt(), (i, b) -> buffer.put(9 + i, b), 8);
+  private void saveFileHeader() {
+    buffer.put(0, header.isReadOnly() ? (byte) 1 : (byte) 0);
+    // Utils.longToByteArray(header.getStartAt(), (i, b) -> buffer.put(1 + i, b), 8);
+    // Utils.longToByteArray(header.getEndAt(), (i, b) -> buffer.put(9 + i, b), 8);
     Utils.intToByteArray(buffer.position(), (i, b) -> buffer.put(17 + i, b), 4);
   }
 
@@ -99,21 +118,28 @@ public class ConcurrentBuffer {
   }
 
   void reset() {
-    buffer.position(TsFileHeader.HEADER_SIZE);
+    header.readOnly = false;
+    saveFileHeader();
+    buffer.position(Header.HEADER_SIZE);
     appendFunc = funcAppend;
   }
 
   void flush() {
+    saveFileHeader();
     buffer.force();
   }
 
-  synchronized int append(Record record) {
+  void close() {
+    saveFileHeader();
+  }
+
+  synchronized int append(Object record) {
     return appendFunc.apply(record);
   }
 
   public ReadContext requireReadCursor(boolean syncWithWriter) {
     readerCount.incrementAndGet();
-    return new ReadContext(TsFileHeader.HEADER_SIZE, syncWithWriter);
+    return new ReadContext(Header.HEADER_SIZE, syncWithWriter);
   }
 
   private void releaseReader() {
@@ -131,7 +157,7 @@ public class ConcurrentBuffer {
   /**
    * ReadContext is not thread-safe.
    */
-  public class ReadContext implements ReadOperator, Iterable<Record>, Iterator<Record>, Closeable {
+  public class ReadContext implements ReadOperator, Iterable<Object>, Iterator<Object>, Closeable {
 
     private int readOffset;
 
@@ -139,7 +165,7 @@ public class ConcurrentBuffer {
 
     private boolean hasNext = true;
 
-    private Record nextItem;
+    private Object nextItem;
 
     ReadContext(int readOffset, boolean syncWithWriter) {
       this.readOffset = readOffset;
@@ -147,7 +173,8 @@ public class ConcurrentBuffer {
     }
 
     @Override
-    public Iterator<Record> iterator() {
+    @NonNull
+    public Iterator<Object> iterator() {
       return this;
     }
 
@@ -168,7 +195,7 @@ public class ConcurrentBuffer {
     }
 
     @Override
-    public Record next() {
+    public Object next() {
       if (nextItem == null) {
         throw new NoSuchElementException();
       }

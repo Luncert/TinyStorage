@@ -20,9 +20,9 @@ class TsRuntime implements DescribedObject<TsRuntimeDesc> {
 
   private int maxFileSize;
 
-  private TsReader<? extends Record> reader;
+  private TsReader<Object> reader;
 
-  private TsWriter<? extends Record> writer;
+  private TsWriter<Object> writer;
 
   private TaskExecutor taskExecutor;
 

@@ -11,6 +11,7 @@
   <modules>
     <module>srv</module>
     <module>storage-module</module>
+    <module>driver</module>
   </modules>
 
   <properties>

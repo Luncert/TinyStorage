@@ -17,7 +17,7 @@ public class TsBucketDesc extends Descriptor {
 
   private String id;
 
-  private int bucketSize;
+  private long bucketSize;
 
   private long lastAccessTime;
 

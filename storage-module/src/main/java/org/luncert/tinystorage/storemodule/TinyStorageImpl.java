@@ -126,7 +126,7 @@ class TinyStorageImpl implements TinyStorage {
       throws EOFException, InvocationTargetException, IllegalAccessException {
     // read file header
 
-    TsFileHeader fileHeader = operator.getFileHeader();
+    FileHeader fileHeader = operator.getFileHeader();
     consumer.onNext("[header]\n"
         + "isReadonly: " + fileHeader.isReadOnly() + "\n"
         + "startAt: " + fileHeader.getStartAt() + "\n"

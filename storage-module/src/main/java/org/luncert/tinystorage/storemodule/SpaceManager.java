@@ -32,10 +32,9 @@ public class SpaceManager implements DescribedObject<SpaceManagerDesc> {
     return bucket;
   }
 
-  synchronized TsFile createFile(long timestamp) {
+  synchronized TsFile createFile() {
     TsFile tsFile = allocNewFile();
     fileMap.put(tsFile.getId(), tsFile);
-    tsFile.setStartAt(timestamp);
     return tsFile;
   }
 

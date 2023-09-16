@@ -13,7 +13,7 @@ class PhysicalFileOperator implements ReadOperator {
 
   private final InputStream source;
   @Getter
-  private final TsFileHeader fileHeader = new TsFileHeader();
+  private final FileHeader fileHeader = new FileHeader();
   @Getter
   private int bufferPos = Integer.MAX_VALUE;
   private int pos;
