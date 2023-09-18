@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 public enum DataType {
 
+  BOOLEAN(1, (b, p) -> b.get(b.position()) == 0x1, (b, p, data) -> b.put(p, (byte) (Boolean.TRUE.equals(data) ? 0x1 : 0x0))),
   BYTE(1, (b, p) -> b.get(b.position()), (b, p, data) -> b.put(p, (Byte) data)),
   CHAR(1, (b, p) -> b.getChar(b.position()), (b, p, data) -> b.putChar(p, (Character) data)),
   SHORT(2, (b, p) -> b.getShort(b.position()), (b, p, data) -> b.putShort(p, (Short) data)),

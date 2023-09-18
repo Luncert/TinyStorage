@@ -2,8 +2,6 @@ package org.luncert.tinystorage.storemodule.physics;
 
 import lombok.NonNull;
 
-import java.util.Optional;
-
 public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexer {
 
   // max children per B-tree node = M-1
@@ -12,28 +10,13 @@ public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexe
 
   private final PagePool pagePool;
 
-  private Node root;
+  private BTreeNode root;
   private int height;
   private int n;
 
-  // internal nodes: only use key and next
-  // external nodes: only use key and value
-  public interface Node {
-
-    int m();
-
-    Comparable<?> keyOf(int child);
-
-    Object valOf(int child);
-
-    Node nextOf(int child);
-  }
-
   public BTreePageIndexer(PagePool pagePool, String rootPageId) {
     this.pagePool = pagePool;
-    Optional<Page> opt = pagePool.load(rootPageId);
-    assert opt.isPresent();
-    this.root = new Node(1);
+    this.root = (BTreePage) pagePool.load(rootPageId);
   }
 
   /**
@@ -44,26 +27,24 @@ public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexe
    * and {@code null} if the key is not in the symbol table
    * @throws IllegalArgumentException if {@code key} is {@code null}
    */
-  public Page get(@NonNull Key key) {
+  public Object get(@NonNull Key key) {
     return search(root, key, height);
   }
 
-  private Page search(Node x, Key key, int ht) {
-    Entry[] children = x.children;
-
+  private Object search(BTreeNode x, Key key, int ht) {
     // external node
     if (ht == 0) {
-      for (int j = 0; j < x.m; j++) {
-        if (eq(key, children[j].key)) {
-          return (Page) children[j].val;
+      for (int j = 0; j < x.m(); j++) {
+        if (eq(key, x.keyOf(j))) {
+          return x.valOf(j);
         }
       }
     }
     // internal node
     else {
-      for (int j = 0; j < x.m; j++) {
-        if (j + 1 == x.m || less(key, children[j + 1].key)) {
-          return search(children[j].next, key, ht - 1);
+      for (int j = 0; j < x.m(); j++) {
+        if (j + 1 == x.m() || less(key, x.keyOf(j + 1))) {
+          return search(x.nextOf(j), key, ht - 1);
         }
       }
     }
@@ -81,7 +62,7 @@ public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexe
    */
   public void put(Key key, Page val) {
     if (key == null) throw new IllegalArgumentException("argument key to put() is null");
-    Node u = insert(root, key, val, height);
+    BTreeNode u = insert(root, key, val, height);
     n++;
     if (u == null) return;
 
@@ -93,24 +74,24 @@ public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexe
     height++;
   }
 
-  private Node insert(Node h, Key key, Page val, int ht) {
+  private BTreeNode insert(BTreeNode h, Key key, Page val, int ht) {
     int j;
     Entry t = new Entry(key, val, null);
 
     // external node
     if (ht == 0) {
-      for (j = 0; j < h.m; j++) {
-        if (less(key, h.children[j].key)) break;
+      for (j = 0; j < h.m(); j++) {
+        if (less(key, h.keyOf(j))) break;
       }
     }
 
     // internal node
     else {
-      for (j = 0; j < h.m; j++) {
-        if ((j+1 == h.m) || less(key, h.children[j+1].key)) {
-          Node u = insert(h.children[j++].next, key, val, ht-1);
+      for (j = 0; j < h.m(); j++) {
+        if ((j+1 == h.m()) || less(key, h.keyOf(j + 1))) {
+          BTreeNode u = insert(h.nextOf(j++), key, val, ht-1);
           if (u == null) return null;
-          t.key = u.children[0].key;
+          t.key = u.keyOf()[0].key;
           t.val = null;
           t.next = u;
           break;

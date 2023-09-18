@@ -5,15 +5,10 @@ import lombok.Getter;
 @Getter
 public abstract class Page extends File {
 
-    private final PageType type;
+    protected final PagePool pagePool;
 
-    public Page(String id, PageType type) {
-        super(id);
-        this.type = type;
-    }
-
-    public enum PageType {
-        INDEX,
-        DATA
+    public Page(PagePool pagePool, MappedFile mappedFile, DataType... metadataDataTypes) {
+        super(mappedFile, 1, metadataDataTypes);
+        this.pagePool = pagePool;
     }
 }

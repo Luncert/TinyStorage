@@ -1,11 +1,15 @@
 package org.luncert.tinystorage.storemodule.physics;
 
-public class BTreePage extends Page implements BTreePageIndexer.Node {
+public abstract class BTreePage extends Page implements BTreeNode {
 
-  private int m;
+  private final int m;
+  private final int[] childOffsets;
 
-  public BTreePage(String id) {
-    super(id);
+  public BTreePage(PagePool pagePool, MappedFile mappedFile) {
+    super(pagePool, mappedFile, DataType.INT, DataType.BOOLEAN);
+    m = getMetadata(0);
+    childOffsets = new int[m];
+    childOffsets[0] = headerSize;
   }
 
   /**
@@ -17,18 +21,38 @@ public class BTreePage extends Page implements BTreePageIndexer.Node {
   }
 
   @Override
-  public Comparable<?> keyOf(int child) {
-    return null;
+  public long keyOf(int child) {
+    return readLong(getOffset(child));
   }
+
+  private int getOffset(int child) {
+    if (childOffsets[child] > 0) {
+      return childOffsets[child];
+    }
+
+    int prevChildOffset = getOffset(child - 1);
+    childOffsets[child] = prevChildOffset + calcValueSize(prevChildOffset);
+    return childOffsets[child];
+  }
+
+  protected abstract int calcValueSize(int position);
 
   @Override
   public Object valOf(int child) {
+    if (this instanceof BTreeIndexPage) {
+      throw new UnsupportedOperationException();
+    }
+    // TODO: deserialize
     return null;
   }
 
   // helper field to iterate over array entries, lazy loading.
   @Override
-  public BTreePageIndexer.Node nextOf(int child) {
-    return null;
+  public BTreeNode nextOf(int child) {
+    if (this instanceof BTreeDataPage) {
+      throw new UnsupportedOperationException();
+    }
+    String pageId = readString(getOffset(child));
+    return (BTreePage) pagePool.load(pageId);
   }
 }

@@ -1,21 +1,25 @@
 package org.luncert.tinystorage.storemodule.physics;
 
-import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
-public abstract class FileMetadata extends FileIO {
+public abstract class MetadataAccessor extends ByteBufferIO {
 
+  protected final int metadataOffset;
   protected final int headerSize;
   private final int[] dataOffsets;
   private final DataType[] dataTypes;
 
-  public FileMetadata(ByteBuffer buffer, DataType... metadataDataTypes) {
-    super(buffer);
+  public MetadataAccessor(DataType... metadataDataTypes) {
+    this(0, metadataDataTypes);
+  }
+
+  public MetadataAccessor(int metadataOffset, DataType... metadataDataTypes) {
+    this.metadataOffset = metadataOffset;
     int fieldAmount = metadataDataTypes.length;
     dataTypes = metadataDataTypes;
     dataOffsets = new int[fieldAmount];
 
-    dataOffsets[0] = 0;
+    dataOffsets[0] = metadataOffset;
     for (int i = 1; i < fieldAmount; i++) {
       dataOffsets[i] = dataOffsets[i - 1] + metadataDataTypes[i - 1].getSize();
     }
