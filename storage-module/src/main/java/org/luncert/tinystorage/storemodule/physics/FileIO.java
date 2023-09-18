@@ -1,18 +1,17 @@
 package org.luncert.tinystorage.storemodule.physics;
 
-import org.luncert.tinystorage.storemodule.config.Configuration;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import org.luncert.tinystorage.storemodule.config.Configuration;
 
 public abstract class FileIO implements DataOutput, DataInput {
 
-  private final ByteBuffer buffer;
-  private int readOffset = 0;
+  protected final ByteBuffer buffer;
+  protected int readOffset = 0;
 
   public FileIO(ByteBuffer buffer) {
     this.buffer = buffer;
