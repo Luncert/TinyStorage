@@ -60,6 +60,10 @@ public class File extends MetadataAccessor {
         }
     }
 
+    public String getId() {
+        return mappedFile.id;
+    }
+
     public void close() throws IOException {
         mappedFile.close();
     }

@@ -10,4 +10,15 @@ public class BTreeDataPage extends BTreePage {
   protected int calcValueSize(int position) {
     return 0;
   }
+
+  @Override
+  public Object valOf(int child) {
+    // TODO: deserialize
+    return super.valOf(child);
+  }
+
+  @Override
+  public void put(int child, long key, Object value) {
+    // TODO: serialize
+  }
 }

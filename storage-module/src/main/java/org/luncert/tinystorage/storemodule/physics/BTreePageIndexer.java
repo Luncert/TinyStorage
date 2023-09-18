@@ -2,7 +2,9 @@ package org.luncert.tinystorage.storemodule.physics;
 
 import lombok.NonNull;
 
-public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexer {
+import java.util.UUID;
+
+public class BTreePageIndexer implements PageIndexer {
 
   // max children per B-tree node = M-1
   // (must be even and greater than 2)
@@ -27,11 +29,11 @@ public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexe
    * and {@code null} if the key is not in the symbol table
    * @throws IllegalArgumentException if {@code key} is {@code null}
    */
-  public Object get(@NonNull Key key) {
+  public Object get(long key) {
     return search(root, key, height);
   }
 
-  private Object search(BTreeNode x, Key key, int ht) {
+  private Object search(BTreeNode x, long key, int ht) {
     // external node
     if (ht == 0) {
       for (int j = 0; j < x.m(); j++) {
@@ -60,51 +62,60 @@ public class BTreePageIndexer<Key extends Comparable<Key>> implements PageIndexe
    * @param  val the value
    * @throws IllegalArgumentException if {@code key} is {@code null}
    */
-  public void put(Key key, Page val) {
-    if (key == null) throw new IllegalArgumentException("argument key to put() is null");
+  public void put(long key, Object val) {
     BTreeNode u = insert(root, key, val, height);
     n++;
     if (u == null) return;
 
     // need to split root
-    Node t = new Node(2);
-    t.children[0] = new Entry(root.children[0].key, null, root);
-    t.children[1] = new Entry(u.children[0].key, null, u);
+    BTreeNode t = new BTreeIndexPage(pagePool, File.open(UUID.randomUUID().toString()));
+    t.set(0, root.keyOf(0), root.id());
+    t.set(1, u.keyOf(0), u.id());
     root = t;
     height++;
   }
 
-  private BTreeNode insert(BTreeNode h, Key key, Page val, int ht) {
+  private BTreeNode insert(BTreeNode h, final long key, final Object val, int ht) {
     int j;
-    Entry t = new Entry(key, val, null);
 
     // external node
     if (ht == 0) {
       for (j = 0; j < h.m(); j++) {
         if (less(key, h.keyOf(j))) break;
       }
-    }
 
+      h.add(j, key, val);
+    }
     // internal node
     else {
+      long k = key;
+      String next = null;
+
       for (j = 0; j < h.m(); j++) {
         if ((j+1 == h.m()) || less(key, h.keyOf(j + 1))) {
           BTreeNode u = insert(h.nextOf(j++), key, val, ht-1);
           if (u == null) return null;
-          t.key = u.keyOf()[0].key;
-          t.val = null;
-          t.next = u;
+          k = u.keyOf(0);
+          next = u.id();
           break;
         }
       }
+
+      h.add(j, k, next);
     }
 
-    for (int i = h.m; i > j; i--)
-      h.children[i] = h.children[i-1];
-    h.children[j] = t;
-    h.m++;
-    if (h.m < M) return null;
-    else         return split(h);
+    return h.m() < M ? null : split(h);
+  }
+
+  // split node in half
+  private BTreeNode split(BTreeNode h) {
+    BTreeNode t = new BTreeIndexPage(pagePool, File.open(UUID.randomUUID().toString()));
+    int half = M / 2;
+    h.setM(half);
+    for (int j = 0; j < half; j++) {
+      t.add(h.keyOf(half + j), h.nextOf(half + j));
+    }
+    return t;
   }
 
   // comparison functions - make Comparable instead of Key to avoid casts

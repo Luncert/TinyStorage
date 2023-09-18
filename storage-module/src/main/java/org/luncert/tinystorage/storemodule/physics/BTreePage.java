@@ -2,7 +2,7 @@ package org.luncert.tinystorage.storemodule.physics;
 
 public abstract class BTreePage extends Page implements BTreeNode {
 
-  private final int m;
+  private int m;
   private final int[] childOffsets;
 
   public BTreePage(PagePool pagePool, MappedFile mappedFile) {
@@ -10,6 +10,11 @@ public abstract class BTreePage extends Page implements BTreeNode {
     m = getMetadata(0);
     childOffsets = new int[m];
     childOffsets[0] = headerSize;
+  }
+
+  @Override
+  public String id() {
+    return getId();
   }
 
   /**
@@ -25,7 +30,7 @@ public abstract class BTreePage extends Page implements BTreeNode {
     return readLong(getOffset(child));
   }
 
-  private int getOffset(int child) {
+  protected int getOffset(int child) {
     if (childOffsets[child] > 0) {
       return childOffsets[child];
     }
@@ -39,20 +44,11 @@ public abstract class BTreePage extends Page implements BTreeNode {
 
   @Override
   public Object valOf(int child) {
-    if (this instanceof BTreeIndexPage) {
-      throw new UnsupportedOperationException();
-    }
-    // TODO: deserialize
-    return null;
+    throw new UnsupportedOperationException();
   }
 
-  // helper field to iterate over array entries, lazy loading.
   @Override
   public BTreeNode nextOf(int child) {
-    if (this instanceof BTreeDataPage) {
-      throw new UnsupportedOperationException();
-    }
-    String pageId = readString(getOffset(child));
-    return (BTreePage) pagePool.load(pageId);
+    throw new UnsupportedOperationException();
   }
 }
