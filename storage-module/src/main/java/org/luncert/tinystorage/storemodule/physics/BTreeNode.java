@@ -4,9 +4,11 @@ package org.luncert.tinystorage.storemodule.physics;
 // external nodes: only use key and value
 public interface BTreeNode {
 
-  String id();
+  // max children per B-tree node = M-1
+  // (must be even and greater than 2)
+  int M = 4;
 
-  void setM(int m);
+  String id();
 
   int m();
 
@@ -23,4 +25,6 @@ public interface BTreeNode {
   void add(int child, long key, Object valueOrNext);
 
   void remove(int child);
+
+  BTreeNode split();
 }

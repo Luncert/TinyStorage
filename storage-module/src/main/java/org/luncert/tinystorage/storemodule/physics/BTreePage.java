@@ -2,8 +2,8 @@ package org.luncert.tinystorage.storemodule.physics;
 
 public abstract class BTreePage extends Page implements BTreeNode {
 
-  private int m;
   private final int[] childOffsets;
+  protected int m;
 
   public BTreePage(PagePool pagePool, MappedFile mappedFile) {
     super(pagePool, mappedFile, DataType.INT, DataType.BOOLEAN);

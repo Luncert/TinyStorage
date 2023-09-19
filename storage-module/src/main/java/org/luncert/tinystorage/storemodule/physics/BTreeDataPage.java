@@ -1,5 +1,6 @@
 package org.luncert.tinystorage.storemodule.physics;
 
+// TODO
 public class BTreeDataPage extends BTreePage {
 
   public BTreeDataPage(PagePool pagePool, MappedFile mappedFile) {
@@ -13,12 +14,31 @@ public class BTreeDataPage extends BTreePage {
 
   @Override
   public Object valOf(int child) {
-    // TODO: deserialize
     return super.valOf(child);
   }
 
   @Override
-  public void put(int child, long key, Object value) {
-    // TODO: serialize
+  public void set(int child, long key, Object valueOrNext) {
+
+  }
+
+  @Override
+  public void add(long key, Object valueOrNext) {
+
+  }
+
+  @Override
+  public void add(int child, long key, Object valueOrNext) {
+
+  }
+
+  @Override
+  public void remove(int child) {
+
+  }
+
+  @Override
+  public BTreeNode split() {
+    throw new UnsupportedOperationException();
   }
 }

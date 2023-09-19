@@ -1,14 +1,8 @@
 package org.luncert.tinystorage.storemodule.physics;
 
-import lombok.NonNull;
-
 import java.util.UUID;
 
 public class BTreePageIndexer implements PageIndexer {
-
-  // max children per B-tree node = M-1
-  // (must be even and greater than 2)
-  private static final int M = 4;
 
   private final PagePool pagePool;
 
@@ -69,8 +63,8 @@ public class BTreePageIndexer implements PageIndexer {
 
     // need to split root
     BTreeNode t = new BTreeIndexPage(pagePool, File.open(UUID.randomUUID().toString()));
-    t.set(0, root.keyOf(0), root.id());
-    t.set(1, u.keyOf(0), u.id());
+    t.set(0, root.keyOf(0), root);
+    t.set(1, u.keyOf(0), u);
     root = t;
     height++;
   }
@@ -104,18 +98,7 @@ public class BTreePageIndexer implements PageIndexer {
       h.add(j, k, next);
     }
 
-    return h.m() < M ? null : split(h);
-  }
-
-  // split node in half
-  private BTreeNode split(BTreeNode h) {
-    BTreeNode t = new BTreeIndexPage(pagePool, File.open(UUID.randomUUID().toString()));
-    int half = M / 2;
-    h.setM(half);
-    for (int j = 0; j < half; j++) {
-      t.add(h.keyOf(half + j), h.nextOf(half + j));
-    }
-    return t;
+    return h.m() < BTreeNode.M ? null : h.split();
   }
 
   // comparison functions - make Comparable instead of Key to avoid casts
